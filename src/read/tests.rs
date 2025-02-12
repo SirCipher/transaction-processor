@@ -1,16 +1,18 @@
 use crate::read::reader_task;
 use crate::transaction::Transaction;
 use rust_decimal::Decimal;
+use std::collections::VecDeque;
 use tokio::join;
 use tokio::sync::mpsc;
 
-async fn read(input: &str, mut expected: Vec<Transaction>) {
+async fn read(input: &str, expected: impl Into<VecDeque<Transaction>>) {
+    let mut expected = expected.into();
     let (tx, mut rx) = mpsc::channel(8);
     let reader = reader_task(input.as_bytes(), tx);
 
     let test = async move {
         while let Some(actual_transaction) = rx.recv().await {
-            match expected.pop() {
+            match expected.pop_front() {
                 Some(expected_transaction) => {
                     assert_eq!(actual_transaction, expected_transaction);
                 }

@@ -13,6 +13,8 @@ pub use account::Account;
 pub use account::{AccountPrinter, TransactionError, TransactionLedgerEntry};
 
 const CLIENT_STOPPED: &str = "Client unexpectedly terminated";
+/// Transaction request channel capacity.
+const TASK_BUFFER_SIZE: usize = 32;
 
 /// A handle to an account. Transactions may be executed against the client using this model.
 #[derive(Debug)]
@@ -40,7 +42,7 @@ impl Client {
         let account = account_store
             .get_account(account_id)
             .unwrap_or_else(|| Account::new(account_id));
-        let (tx, rx) = mpsc::channel(8);
+        let (tx, rx) = mpsc::channel(TASK_BUFFER_SIZE);
         let stop = Arc::new(Notify::new());
         let task = Arc::new(tokio::spawn(run_client(
             rx,
